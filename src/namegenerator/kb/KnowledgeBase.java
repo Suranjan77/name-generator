@@ -7,22 +7,22 @@ public class KnowledgeBase implements Serializable {
     private static final long serialVersionUID = 43502L;
 
     private Map<Character, Map<Character, Double>> markovChain;
-    private int totalCharacters;
-    private int totalWords;
+    private long totalCharacters;
+    private long totalWords;
 
-    public int getTotalCharacters() {
+    public long getTotalCharacters() {
         return totalCharacters;
     }
 
-    public void setTotalCharacters(int totalCharacters) {
+    public void setTotalCharacters(long totalCharacters) {
         this.totalCharacters = totalCharacters;
     }
 
-    public int getTotalWords() {
+    public long getTotalWords() {
         return totalWords;
     }
 
-    public void setTotalWords(int totalWords) {
+    public void setTotalWords(long totalWords) {
         this.totalWords = totalWords;
     }
 
@@ -32,5 +32,28 @@ public class KnowledgeBase implements Serializable {
 
     public void setMarkovChain(Map<Character, Map<Character, Double>> markovChain) {
         this.markovChain = markovChain;
+    }
+
+    @Override
+    public String toString() {
+        return "KnowledgeBase{" +
+                "\nmarkovChain=[\n" + toMarkovChainString() + "]" +
+                "\n, totalCharacters=" + totalCharacters +
+                "\n, totalWords=" + totalWords +
+                "\n}";
+    }
+
+    private String toMarkovChainString() {
+        StringBuilder sb = new StringBuilder();
+        markovChain.forEach((k, v) -> {
+            sb.append("\t").append(k).append(": {");
+            v.forEach((key, val) -> {
+                sb.append(key).append(" : ").append(val).append(", ");
+            });
+            sb.deleteCharAt(sb.length() - 1);
+            sb.deleteCharAt(sb.length() - 1);
+            sb.append(" }\n");
+        });
+        return sb.toString();
     }
 }

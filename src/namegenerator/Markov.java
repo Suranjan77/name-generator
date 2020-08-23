@@ -1,8 +1,8 @@
 package namegenerator;
 
 import namegenerator.constants.FilePathConstants;
+import namegenerator.kb.CharSequencePair;
 import namegenerator.kb.KnowledgeBase;
-import namegenerator.kb.TwoCharSequence;
 
 import java.io.*;
 import java.util.*;
@@ -20,9 +20,15 @@ public class Markov {
     }
 
     public static void main(String[] args) throws IOException {
+        Markov markov = new Markov();
+        KnowledgeBase knowledgeBase = markov.learn(FilePathConstants.DATA_FILE_PATH);
+        if (knowledgeBase != null) {
+            System.out.println(knowledgeBase.toString());
+        }
 
     }
 
+    //todo: Optimization
     public KnowledgeBase learn(final String dataPath) throws IOException {
         Optional<KnowledgeBase> knowledgeBase = getKnowledgeBase();
         if (knowledgeBase.isPresent()) {
@@ -34,28 +40,57 @@ public class Markov {
         initialize(dataPath);
 
         KnowledgeBase kb = new KnowledgeBase();
-        Map<Character, Map<Character, Double>> knowledge = new HashMap<>();
 
-        List<TwoCharSequence> twoCharSequences = new ArrayList<>();
+        List<CharSequencePair> charSequencePairs = new ArrayList<>();
         List<char[]> characters = names.stream().map(String::toCharArray).collect(Collectors.toList());
         characters.forEach(charArray -> {
             if (charArray.length % 2 == 0) {
-                twoCharSequences.addAll(createCharPairs(charArray, charArray.length));
+                charSequencePairs.addAll(createCharPairs(charArray, charArray.length));
             } else {
-                twoCharSequences.addAll(createCharPairs(charArray, charArray.length - 1));
+                charSequencePairs.addAll(createCharPairs(charArray, charArray.length - 1));
             }
         });
 
+        Map<Character, List<Character>> associatedChars = new HashMap<>();
+        charSequencePairs.forEach(c -> {
+            associatedChars.putIfAbsent(c.getX(), new ArrayList<>());
+            associatedChars.computeIfPresent(c.getX(), (k, v) -> {
+                v.add(c.getY());
+                return v;
+            });
+        });
+
+        Map<Character, Map<Character, Double>> knowledge = new HashMap<>();
+        associatedChars.forEach((k, v) -> {
+            knowledge.putIfAbsent(k, new HashMap<>());
+            knowledge.computeIfPresent(
+                    k,
+                    (key, value) -> v.stream().collect(
+                            Collectors.groupingBy(e -> e, Collectors.collectingAndThen(
+                                    Collectors.counting(),
+                                    count -> (double) count / (double) v.size())
+                            )
+                    )
+            );
+        });
+
+        kb.setMarkovChain(knowledge);
+        long charCount = 0l;
+        for (char[] c : characters) {
+            charCount += c.length;
+        }
+        kb.setTotalCharacters(charCount);
+        kb.setTotalWords(names.size());
         return kb;
     }
 
-    private List<TwoCharSequence> createCharPairs(final char[] charArray, final int limit) {
-        List<TwoCharSequence> twoCharSequences = new ArrayList<>();
+    private List<CharSequencePair> createCharPairs(final char[] charArray, final int limit) {
+        List<CharSequencePair> charSequencePairs = new ArrayList<>();
         for (int i = 0; i < limit - 1; i = i + 2) {
-            TwoCharSequence twoCharSequence = new TwoCharSequence(charArray[i], charArray[i + 1]);
-            twoCharSequences.add(twoCharSequence);
+            CharSequencePair charSequencePair = new CharSequencePair(charArray[i], charArray[i + 1]);
+            charSequencePairs.add(charSequencePair);
         }
-        return twoCharSequences;
+        return charSequencePairs;
     }
 
     private Optional<KnowledgeBase> getKnowledgeBase() {
