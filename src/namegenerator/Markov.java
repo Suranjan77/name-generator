@@ -3,8 +3,12 @@ package namegenerator;
 import namegenerator.constants.FilePathConstants;
 import namegenerator.kb.CharSequencePair;
 import namegenerator.kb.KnowledgeBase;
+import namegenerator.utils.KnowledgeBaseIOUtils;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -19,18 +23,8 @@ public class Markov {
     private Markov() {
     }
 
-    public static void main(String[] args) throws IOException {
-        Markov markov = new Markov();
-        KnowledgeBase knowledgeBase = markov.learn(FilePathConstants.DATA_FILE_PATH);
-        if (knowledgeBase != null) {
-            System.out.println(knowledgeBase.toString());
-        }
-
-    }
-
-    //todo: Optimization
     public KnowledgeBase learn(final String dataPath) throws IOException {
-        Optional<KnowledgeBase> knowledgeBase = getKnowledgeBase();
+        Optional<KnowledgeBase> knowledgeBase = KnowledgeBaseIOUtils.getKnowledgeBase(currentDir + "/" + FilePathConstants.KNOWLEDGE_BASE_PATH);
         if (knowledgeBase.isPresent()) {
             return knowledgeBase.get();
         }
@@ -81,6 +75,7 @@ public class Markov {
         }
         kb.setTotalCharacters(charCount);
         kb.setTotalWords(names.size());
+        KnowledgeBaseIOUtils.saveKnowledgeBase(kb, currentDir + "/" + FilePathConstants.KNOWLEDGE_BASE_PATH);
         return kb;
     }
 
@@ -91,20 +86,6 @@ public class Markov {
             charSequencePairs.add(charSequencePair);
         }
         return charSequencePairs;
-    }
-
-    private Optional<KnowledgeBase> getKnowledgeBase() {
-        String path = currentDir + "/" + FilePathConstants.KNOWLEDGE_BASE_PATH;
-        try (FileInputStream fis = new FileInputStream(new File(path))) {
-            try (ObjectInputStream objectInputStream = new ObjectInputStream(fis)) {
-                LOGGER.log(Level.INFO, "Reading Knowledge base from file ... ");
-                KnowledgeBase kb = (KnowledgeBase) objectInputStream.readObject();
-                return Optional.of(kb);
-            }
-        } catch (IOException | ClassNotFoundException e) {
-            LOGGER.log(Level.WARNING, "Could not read knowledge-base from file ... ");
-            return Optional.empty();
-        }
     }
 
     private void initialize(final String filePath) throws IOException {
