@@ -1,9 +1,10 @@
-package namegenerator;
+package com.namegenerator.markov;
 
-import namegenerator.constants.FilePathConstants;
-import namegenerator.kb.CharSequencePair;
-import namegenerator.kb.KnowledgeBase;
-import namegenerator.utils.KnowledgeBaseIOUtils;
+import com.namegenerator.ApplicationRunner;
+import com.namegenerator.constants.FilePathConstants;
+import com.namegenerator.knowledge.CharSequencePair;
+import com.namegenerator.knowledge.KnowledgeBase;
+import com.namegenerator.utils.KnowledgeBaseIOUtils;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -17,19 +18,20 @@ import java.util.stream.Collectors;
 public class Markov {
 
     private static final Logger LOGGER = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
-    private final String currentDir = System.getProperty("user.dir");
+    private final KnowledgeBaseIOUtils knowledgeBaseIOUtils;
     private Set<String> names;
 
-    private Markov() {
+    public Markov() {
+        this.knowledgeBaseIOUtils = new KnowledgeBaseIOUtils();
     }
 
-    public KnowledgeBase learn(final String dataPath) throws IOException {
-        Optional<KnowledgeBase> knowledgeBase = KnowledgeBaseIOUtils.getKnowledgeBase(currentDir + "/" + FilePathConstants.KNOWLEDGE_BASE_PATH);
-        if (knowledgeBase.isPresent()) {
-            return knowledgeBase.get();
+    public KnowledgeBase learn(final String dataPath, final boolean usePreviousKnowledgeBase) {
+        if (usePreviousKnowledgeBase) {
+            Optional<KnowledgeBase> knowledgeBase = knowledgeBaseIOUtils.getKnowledgeBase(FilePathConstants.KNOWLEDGE_BASE_PATH);
+            if (knowledgeBase.isPresent()) {
+                return knowledgeBase.get();
+            }
         }
-
-        LOGGER.log(Level.INFO, "Learning from data set ...");
 
         initialize(dataPath);
 
@@ -75,7 +77,7 @@ public class Markov {
         }
         kb.setTotalCharacters(charCount);
         kb.setTotalWords(names.size());
-        KnowledgeBaseIOUtils.saveKnowledgeBase(kb, currentDir + "/" + FilePathConstants.KNOWLEDGE_BASE_PATH);
+        knowledgeBaseIOUtils.saveKnowledgeBase(kb, FilePathConstants.KNOWLEDGE_BASE_PATH);
         return kb;
     }
 
@@ -88,11 +90,9 @@ public class Markov {
         return charSequencePairs;
     }
 
-    private void initialize(final String filePath) throws IOException {
+    private void initialize(final String filePath) {
         if (null == names || names.isEmpty()) {
-            String path = currentDir + filePath;
-            File file = new File(path);
-            LOGGER.log(Level.INFO, "Initializing Data Set  from {0}", path);
+            File file = new File(Objects.requireNonNull(ApplicationRunner.class.getClassLoader().getResource(filePath)).getFile());
             try (FileReader fileReader = new FileReader(file)) {
                 try (BufferedReader bufferedReader = new BufferedReader(fileReader)) {
                     names = new HashSet<>();
@@ -101,6 +101,8 @@ public class Markov {
                         names.add(st.toLowerCase());
                     }
                 }
+            } catch (IOException e) {
+                LOGGER.log(Level.SEVERE, "Could not read training data from file ... ");
             }
         }
     }

@@ -1,4 +1,4 @@
-package namegenerator.kb;
+package com.namegenerator.knowledge;
 
 import java.io.Serializable;
 import java.util.Map;

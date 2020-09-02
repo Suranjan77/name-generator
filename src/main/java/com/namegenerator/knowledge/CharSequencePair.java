@@ -1,4 +1,4 @@
-package namegenerator.kb;
+package com.namegenerator.knowledge;
 
 public final class CharSequencePair {
 
